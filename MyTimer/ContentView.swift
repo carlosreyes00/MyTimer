@@ -15,14 +15,43 @@ struct ContentView: View {
     @State private var textToNotify: String = ""
     @State private var isFromTextField: Bool = false
     
-    @State private var timeRemaining: Int = 10
+    @State private var initialTime = 30
+    @State private var timeRemaining = 30
+    @State private var timer: Timer?
     
     var body: some View {
         VStack {
             Spacer()
-            Text("\(timeRemaining)")
-            Button("Start Timer") {
-                executeTimer()
+            HStack {
+                Text("Time: \(timeRemaining)")
+                    .font(.largeTitle)
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 5)
+                    .background(.black.opacity(0.75))
+                    .clipShape(.capsule)
+                
+                HStack {
+                    Button {
+                        executeTimer()
+                    } label: {
+                        Image(systemName: "play")
+                    }
+                    
+                    Button {
+                        timer?.invalidate()
+                    } label: {
+                        Image(systemName: "pause")
+                    }
+                    
+                    Button {
+                        timer?.invalidate()
+                        timeRemaining = initialTime
+                    } label: {
+                        Image(systemName: "stop")
+                    }
+                }
+                .font(.title)
             }
             Spacer()
             VStack {
@@ -34,45 +63,7 @@ struct ContentView: View {
                 Toggle("isFromTextField", isOn: $isFromTextField)
                     .padding(.horizontal)
                 
-                Button("Request Permission") {
-                    print("button was pressed")
-                    notifyCenter.requestAuthorization(
-                        options: [.alert, .badge, .sound]) { success, error in
-                            if success {
-                                print("All set!")
-                            } else if let error {
-                                print(error.localizedDescription)
-                            }
-                        }
-                }
-                .buttonStyle(.bordered)
-                
-                Button("Schedule Notification") {
-                    print("scheduling notification")
-                    let content = UNMutableNotificationContent()
-                    content.title = "Time's up"
-                    if isFromTextField {
-                        content.subtitle = "\(textToNotify)"
-                    } else {
-                        content.subtitle = "The timer for \(Int.random(in: 1...10)) minutes is done."
-                    }
-                    content.sound = UNNotificationSound.default
-                    content.badge = NSNumber(value: 2)
-                    
-                    let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 3,
-                                                                    repeats: false)
-                    
-                    let request = UNNotificationRequest(
-                        identifier: UUID().uuidString,
-                        content: content,
-                        trigger: trigger
-                    )
-                    
-                    notifyCenter.add(request)
-                    print("notification was scheduled")
-                }
-                .buttonStyle(.borderedProminent)
-                .padding(.bottom)
+                NotificationButtons(textToNotify: textToNotify, isFromTextField: isFromTextField)
             }
             .background (
                 RoundedRectangle(cornerRadius: 20)
@@ -84,8 +75,8 @@ struct ContentView: View {
         }
     }
     
-    private func executeTimer() {
-        Timer.scheduledTimer(withTimeInterval: 1, repeats: true) {_ in 
+    private  func executeTimer() {
+        timer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) {_ in
             if timeRemaining > 0 {
                 timeRemaining -= 1
             }
